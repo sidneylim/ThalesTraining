@@ -1,0 +1,46 @@
+name: Fetch Postgres Dynamic Secrets and update a postgres DB table
+'on': push
+jobs:
+  fetch_postgres_dynamic_secrets:
+    runs-on: self-hosted
+    name: Fetch Postgres Dynamic Secrets
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Set up environment to ignore SSL warnings
+        run: echo "NODE_TLS_REJECT_UNAUTHORIZED=0" >> $GITHUB_ENV
+      - name: Fetch dynamic secrets from Akeyless
+        id: fetch-dynamic-secrets
+        uses: akeyless-community/akeyless-github-action@v1.0.1
+        with:
+          access-id: '${{ secrets.ACCESS_ID }}'
+          dynamic-secrets: |
+            - name: "/PostgresDS"
+              output-name: "postgres_dynamic_secret"
+          access-type: jwt
+          export-secrets-to-outputs: true
+          export-secrets-to-environment: true
+          api-url: 'https://192.168.8.206/akeyless-api/v2/'
+      - name: Export Secrets to Environment
+        run: >
+          echo '${{ steps.fetch-dynamic-secrets.outputs.postgres_dynamic_secret
+          }}' | jq -r
+          'to_entries|map("POSTGRES_\(.key|ascii_upcase)=\(.value|tostring)")|.[]'
+          >> $GITHUB_ENV
+      - name: Update PostgreSQL Table
+        env:
+          DB_NAME: postgres
+          DB_HOST: 34.31.231.250
+          DB_PORT: '5432'
+          DB_USER: '${{ env.POSTGRES_USER }}'
+          DB_PASS: '${{ env.POSTGRES_PASSWORD }}'
+        run: >
+         # The SQL command to update the table. You should replace this with your actual SQL command.
+          SQL_COMMAND="INSERT INTO public.people (First_Name, Last_Name) VALUES
+          ('YOUR', 'OWNNAME');"
+          # Use PGPASSWORD to pass the password, then run psql to execute your SQL command
+          export PGPASSWORD=$DB_PASS
+          psql -h "$DB_HOST" -p "$DB_PORT" -d "$DB_NAME" -U "$DB_USER" -c "$SQL_COMMAND"
+          # Unset the PGPASSWORD after use for security reasons
+          unset PGPASSWORD
