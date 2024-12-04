@@ -38,7 +38,7 @@ jobs:
         run: >
          # The SQL command to update the table. You should replace this with your actual SQL command.
           SQL_COMMAND="INSERT INTO public.people (First_Name, Last_Name) VALUES
-          ('YOUR', 'OWNNAME');"
+          ('Sidney', 'LIM');"
           # Use PGPASSWORD to pass the password, then run psql to execute your SQL command
           export PGPASSWORD=$DB_PASS
           psql -h "$DB_HOST" -p "$DB_PORT" -d "$DB_NAME" -U "$DB_USER" -c "$SQL_COMMAND"
